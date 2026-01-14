@@ -1,0 +1,90 @@
+build/
+.qtcreator/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Compiled Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.lib
+*.la
+*.lo
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Qt specific
+*.pro.user
+*.pro.user.*
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*.autosave
+
+# Qt Creator
+*.autosave
+*.QMake.stash
+*.qmlproject.user
+*.qmlproject.user.*
+*.qmlproject.user.*.*.*
+
+# Qt MOC
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+
+# Qt Linguist
+*.ts
+*.qm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.tmp
+*.backup
+*~

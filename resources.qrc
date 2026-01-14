@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icon/timezone.svg</file>
+    </qresource>
+</RCC>
