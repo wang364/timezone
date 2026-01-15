@@ -27,7 +27,7 @@ TrayIcon::TrayIcon(QObject *parent)
         setIcon(QIcon(pixmap));
     }
     
-    setToolTip("时区工具");
+    setToolTip(tr("时区工具"));
     
     createTrayMenu();
     
@@ -70,9 +70,9 @@ void TrayIcon::createTrayMenu()
 {
     m_trayMenu = new QMenu();
     
-    m_showSettingsAction = new QAction("设置", this);
-    m_toggleTimezoneAction = new QAction("显示时区窗口", this);
-    m_quitAction = new QAction("退出", this);
+    m_showSettingsAction = new QAction(tr("设置"), this);
+    m_toggleTimezoneAction = new QAction(tr("显示时区窗口"), this);
+    m_quitAction = new QAction(tr("退出"), this);
     
     connect(m_showSettingsAction, &QAction::triggered, this, &TrayIcon::onShowSettings);
     connect(m_toggleTimezoneAction, &QAction::triggered, this, &TrayIcon::onToggleTimezoneWindow);
@@ -98,11 +98,11 @@ void TrayIcon::onToggleTimezoneWindow()
 {
     if (m_timezoneWindowVisible) {
         m_timezoneWindow->hide();
-        m_toggleTimezoneAction->setText("显示时区窗口");
+        m_toggleTimezoneAction->setText(tr("显示时区窗口"));
     } else {
         m_timezoneWindow->show();
         m_timezoneWindow->activateWindow();
-        m_toggleTimezoneAction->setText("隐藏时区窗口");
+        m_toggleTimezoneAction->setText(tr("隐藏时区窗口"));
     }
     
     m_timezoneWindowVisible = !m_timezoneWindowVisible;
@@ -116,6 +116,6 @@ void TrayIcon::onQuit()
 void TrayIcon::updateTrayToolTip()
 {
     QDateTime currentTime = QDateTime::currentDateTime();
-    QString tooltip = QString("当前时间: %1\n时区工具").arg(currentTime.toString("yyyy-MM-dd hh:mm:ss"));
+    QString tooltip = QString(tr("当前时间: %1\n时区工具")).arg(currentTime.toString("yyyy-MM-dd hh:mm:ss"));
     setToolTip(tooltip);
 }

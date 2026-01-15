@@ -60,8 +60,8 @@ qrc_*.cpp
 ui_*.h
 
 # Qt Linguist
-*.ts
-*.qm
+#*.ts
+#*.qm
 
 # IDE
 .vscode/

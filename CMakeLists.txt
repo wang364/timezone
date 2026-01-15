@@ -41,6 +41,13 @@ target_link_libraries(apptimezone
     PRIVATE Qt6::Widgets Qt6::Concurrent
 )
 
+# 翻译文件将手动创建和编译
+# 安装翻译文件（如果存在）
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/translations/
+    DESTINATION ${CMAKE_INSTALL_BINDIR}/translations
+    FILES_MATCHING PATTERN "*.qm"
+)
+
 include(GNUInstallDirs)
 install(TARGETS apptimezone
     BUNDLE DESTINATION .

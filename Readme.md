@@ -18,3 +18,10 @@ cd build
 cmake --build . --config Release
 
 .\apptimezone.exe
+
+
+lupdate . -ts translations/timezone_zh.ts translations/timezone_en.ts translations/timezone_ja.ts translations/timezone_ko.ts translations/timezone_fr.ts translations/timezone_de.ts translations/timezone_es.ts translations/timezone_pt.ts
+
+python translate_ts.py
+
+lrelease translations/*.ts

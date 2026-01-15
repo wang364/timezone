@@ -22,7 +22,7 @@ SettingsWindow::SettingsWindow(TimezoneWindow *timezoneWindow, QWidget *parent)
     setupUI();
     loadSettings();
     
-    setWindowTitle("时区工具设置");
+    setWindowTitle(tr("时区工具设置"));
     setFixedSize(600, 500);
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     
@@ -48,26 +48,38 @@ void SettingsWindow::setupUI()
     QWidget *generalTab = new QWidget();
     QVBoxLayout *generalLayout = new QVBoxLayout(generalTab);
     
-    m_formatLabel = new QLabel("时间格式:");
+    m_formatLabel = new QLabel(tr("时间格式:"));
     m_formatComboBox = new QComboBox();
-    m_formatComboBox->addItem("24小时制", "HH:mm:ss");
-    m_formatComboBox->addItem("12小时制", "hh:mm:ss AP");
+    m_formatComboBox->addItem(tr("24小时制"), "HH:mm:ss");
+    m_formatComboBox->addItem(tr("12小时制"), "hh:mm:ss AP");
     
-    m_dateFormatLabel = new QLabel("日期格式:");
+    m_dateFormatLabel = new QLabel(tr("日期格式:"));
     m_dateFormatComboBox = new QComboBox();
-    m_dateFormatComboBox->addItem("YYYY-MM-DD", "yyyy-MM-dd");
-    m_dateFormatComboBox->addItem("MM/DD/YYYY", "MM/dd/yyyy");
-    m_dateFormatComboBox->addItem("DD/MM/YYYY", "dd/MM/yyyy");
+    m_dateFormatComboBox->addItem(tr("YYYY-MM-DD"), "yyyy-MM-dd");
+    m_dateFormatComboBox->addItem(tr("MM/DD/YYYY"), "MM/dd/yyyy");
+    m_dateFormatComboBox->addItem(tr("DD/MM/YYYY"), "dd/MM/yyyy");
     
-    m_weekdayFormatLabel = new QLabel("星期格式:");
+    m_weekdayFormatLabel = new QLabel(tr("星期格式:"));
     m_weekdayFormatComboBox = new QComboBox();
-    m_weekdayFormatComboBox->addItem("Mon", "ddd");
-    m_weekdayFormatComboBox->addItem("Monday", "dddd");
+    m_weekdayFormatComboBox->addItem(tr("Mon"), "ddd");
+    m_weekdayFormatComboBox->addItem(tr("Monday"), "dddd");
     
-    m_startWithSystemCheckBox = new QCheckBox("开机自启动");
-    m_showSecondsCheckBox = new QCheckBox("显示秒数");
-    m_showDateCheckBox = new QCheckBox("显示日期");
-    m_showWeekdayCheckBox = new QCheckBox("显示星期");
+    // 添加语言选择控件
+    m_languageLabel = new QLabel(tr("语言:"));
+    m_languageComboBox = new QComboBox();
+    m_languageComboBox->addItem(tr("中文"), "zh");
+    m_languageComboBox->addItem(tr("English"), "en");
+    m_languageComboBox->addItem(tr("日本語"), "ja");
+    m_languageComboBox->addItem(tr("한국어"), "ko");
+    m_languageComboBox->addItem(tr("Français"), "fr");
+    m_languageComboBox->addItem(tr("Deutsch"), "de");
+    m_languageComboBox->addItem(tr("Español"), "es");
+    m_languageComboBox->addItem(tr("Português"), "pt");
+    
+    m_startWithSystemCheckBox = new QCheckBox(tr("开机自启动"));
+    m_showSecondsCheckBox = new QCheckBox(tr("显示秒数"));
+    m_showDateCheckBox = new QCheckBox(tr("显示日期"));
+    m_showWeekdayCheckBox = new QCheckBox(tr("显示星期"));
     
     generalLayout->addWidget(m_formatLabel);
     generalLayout->addWidget(m_formatComboBox);
@@ -78,6 +90,9 @@ void SettingsWindow::setupUI()
     generalLayout->addWidget(m_weekdayFormatLabel);
     generalLayout->addWidget(m_weekdayFormatComboBox);
     generalLayout->addSpacing(10);
+    generalLayout->addWidget(m_languageLabel);
+    generalLayout->addWidget(m_languageComboBox);
+    generalLayout->addSpacing(10);
     generalLayout->addWidget(m_startWithSystemCheckBox);
     generalLayout->addWidget(m_showSecondsCheckBox);
     generalLayout->addWidget(m_showDateCheckBox);
@@ -86,14 +101,14 @@ void SettingsWindow::setupUI()
     
     setupCityManagementTab();
     
-    m_tabWidget->addTab(generalTab, "常规设置");
-    m_tabWidget->addTab(m_cityManagementTab, "城市管理");
+    m_tabWidget->addTab(generalTab, tr("常规设置"));
+    m_tabWidget->addTab(m_cityManagementTab, tr("城市管理"));
     
     m_mainLayout->addWidget(m_tabWidget);
     
     m_buttonLayout = new QHBoxLayout();
-    m_saveButton = new QPushButton("保存");
-    m_cancelButton = new QPushButton("取消");
+    m_saveButton = new QPushButton(tr("保存"));
+    m_cancelButton = new QPushButton(tr("取消"));
     
     m_buttonLayout->addStretch();
     m_buttonLayout->addWidget(m_saveButton);
@@ -113,11 +128,11 @@ void SettingsWindow::setupCityManagementTab()
     // 搜索和添加区域
     QVBoxLayout *searchLayout = new QVBoxLayout();
     
-    QLabel *searchLabel = new QLabel("添加城市:");
+    QLabel *searchLabel = new QLabel(tr("添加城市:"));
     searchLabel->setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 5px;");
     
     m_citySearchEdit = new QLineEdit();
-    m_citySearchEdit->setPlaceholderText("输入城市名称搜索，回车或从下拉列表选择添加...");
+    m_citySearchEdit->setPlaceholderText(tr("输入城市名称搜索，回车或从下拉列表选择添加..."));
     
     m_cityListModel = new QStringListModel(this);
     m_proxyModel = new QSortFilterProxyModel(this);
@@ -152,16 +167,16 @@ void SettingsWindow::setupCityManagementTab()
     searchLayout->addWidget(m_citySearchEdit);
     
     // 已添加城市列表
-    QLabel *cityListLabel = new QLabel("已添加的城市:");
+    QLabel *cityListLabel = new QLabel(tr("已添加的城市:"));
     cityListLabel->setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 15px; margin-bottom: 5px;");
     
     m_cityListWidget = new QListWidget();
     m_cityListWidget->setStyleSheet("QListWidget { border: 1px solid #ccc; border-radius: 3px; }");
     
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    m_removeCityButton = new QPushButton("删除");
-    m_moveUpButton = new QPushButton("上移");
-    m_moveDownButton = new QPushButton("下移");
+    m_removeCityButton = new QPushButton(tr("删除"));
+    m_moveUpButton = new QPushButton(tr("上移"));
+    m_moveDownButton = new QPushButton(tr("下移"));
     
     buttonLayout->addWidget(m_removeCityButton);
     buttonLayout->addStretch();
@@ -222,6 +237,7 @@ void SettingsWindow::loadSettings()
     QString timeFormat = m_settings->value("timeFormat", "HH:mm:ss").toString();
     QString dateFormat = m_settings->value("dateFormat", "yyyy-MM-dd").toString();
     QString weekdayFormat = m_settings->value("weekdayFormat", "ddd").toString();
+    QString language = m_settings->value("language", "zh").toString();
     bool startWithSystem = m_settings->value("startWithSystem", false).toBool();
     bool showSeconds = m_settings->value("showSeconds", true).toBool();
     bool showDate = m_settings->value("showDate", true).toBool();
@@ -242,6 +258,12 @@ void SettingsWindow::loadSettings()
         m_weekdayFormatComboBox->setCurrentIndex(weekdayFormatIndex);
     }
     
+    // 加载语言设置
+    int languageIndex = m_languageComboBox->findData(language);
+    if (languageIndex >= 0) {
+        m_languageComboBox->setCurrentIndex(languageIndex);
+    }
+    
     m_startWithSystemCheckBox->setChecked(startWithSystem);
     m_showSecondsCheckBox->setChecked(showSeconds);
     m_showDateCheckBox->setChecked(showDate);
@@ -253,6 +275,7 @@ void SettingsWindow::onSaveSettings()
     m_settings->setValue("timeFormat", m_formatComboBox->currentData().toString());
     m_settings->setValue("dateFormat", m_dateFormatComboBox->currentData().toString());
     m_settings->setValue("weekdayFormat", m_weekdayFormatComboBox->currentData().toString());
+    m_settings->setValue("language", m_languageComboBox->currentData().toString());
     m_settings->setValue("startWithSystem", m_startWithSystemCheckBox->isChecked());
     m_settings->setValue("showSeconds", m_showSecondsCheckBox->isChecked());
     m_settings->setValue("showDate", m_showDateCheckBox->isChecked());
@@ -311,7 +334,7 @@ void SettingsWindow::onAddCityFromSearch()
 {
     QString cityName = m_citySearchEdit->text().trimmed();
     if (cityName.isEmpty()) {
-        QMessageBox::warning(this, "警告", "请输入城市名称");
+        QMessageBox::warning(this, tr("警告"), tr("请输入城市名称"));
         return;
     }
     
@@ -323,7 +346,7 @@ void SettingsWindow::addCityByName(const QString &cityName)
 {
     // 检查输入的城市是否有效（存在于可用列表中）
     if (!CityManager::instance().isCityValid(cityName)) {
-        QMessageBox::warning(this, "警告", QString("城市 '%1' 未找到或不在可用列表中").arg(cityName));
+        QMessageBox::warning(this, tr("警告"), QString(tr("城市 '%1' 未找到或不在可用列表中")).arg(cityName));  
         return;
     }
     
@@ -342,8 +365,7 @@ void SettingsWindow::onRemoveCity()
     QListWidgetItem *item = m_cityListWidget->item(currentRow);
     QString cityName = item->text().replace(" ★", "");
     
-    int result = QMessageBox::question(this, "确认删除", 
-                                      QString("确定要删除城市 '%1' 吗？").arg(cityName));
+    int result = QMessageBox::question(this, tr("确认删除"), QString(tr("确定要删除城市 '%1' 吗？")).arg(cityName));
     if (result == QMessageBox::Yes) {
         CityManager::instance().removeCity(cityName);
         refreshCityList();

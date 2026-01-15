@@ -64,6 +64,10 @@ private:
     QLabel *m_weekdayFormatLabel;
     QComboBox *m_weekdayFormatComboBox;
     
+    // 语言设置
+    QLabel *m_languageLabel;
+    QComboBox *m_languageComboBox;
+    
     QCheckBox *m_startWithSystemCheckBox;
     QCheckBox *m_showSecondsCheckBox;
     QCheckBox *m_showDateCheckBox;

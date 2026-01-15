@@ -28,7 +28,7 @@ TimezoneWindow::TimezoneWindow(QWidget *parent)
     setupUI();
     loadSettings();
     
-    setWindowTitle("时区显示");
+    setWindowTitle(tr("时区显示"));
     
     // 设置窗口标志：不在任务栏显示，无边框，保持置顶
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -66,7 +66,7 @@ void TimezoneWindow::setupUI()
     titleLayout->setContentsMargins(5, 0, 5, 0);
     
     // 标题标签
-    QLabel *titleLabel = new QLabel("时区工具");
+    QLabel *titleLabel = new QLabel(tr("时区工具"));
     titleLabel->setStyleSheet(
         "font-size: 12px; "
         "font-weight: bold; "
@@ -253,7 +253,7 @@ void TimezoneWindow::createCityTimeDisplay()
     
     if (cities.isEmpty()) {
         // 显示空状态
-        QLabel *noCitiesLabel = new QLabel("暂无城市，请在设置中添加");
+        QLabel *noCitiesLabel = new QLabel(tr("暂无城市，请在设置中添加"));
         noCitiesLabel->setAlignment(Qt::AlignCenter);
         noCitiesLabel->setStyleSheet(
             "color: rgba(255, 255, 255, 160); "
