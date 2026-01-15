@@ -61,8 +61,6 @@ void SettingsWindow::setupUI()
     
     m_weekdayFormatLabel = new QLabel("星期格式:");
     m_weekdayFormatComboBox = new QComboBox();
-    m_weekdayFormatComboBox->addItem("周一", "ddd");
-    m_weekdayFormatComboBox->addItem("星期一", "dddd");
     m_weekdayFormatComboBox->addItem("Mon", "ddd");
     m_weekdayFormatComboBox->addItem("Monday", "dddd");
     

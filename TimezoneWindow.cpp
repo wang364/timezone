@@ -29,13 +29,12 @@ TimezoneWindow::TimezoneWindow(QWidget *parent)
     loadSettings();
     
     setWindowTitle("时区显示");
-    setMinimumSize(250, 150);
     
     // 设置窗口标志：不在任务栏显示，无边框，保持置顶
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     
     // 设置窗口大小约束
-    setMinimumSize(320, 150); // 确保足够的宽度显示时间
+    setMinimumSize(320, 90); // 确保足够的宽度显示时间
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     
     connect(m_updateTimer, &QTimer::timeout, this, &TimezoneWindow::updateTimeDisplay);
@@ -106,14 +105,12 @@ void TimezoneWindow::setupUI()
         "    border: none; "
         "    background: transparent; "
         "    margin: 0; "
-        "    padding: 5px 0; "
         "}"
     );
     
     m_citiesLayout = new QVBoxLayout(m_citiesGroup);
     m_citiesLayout->setContentsMargins(0, 0, 0, 0);
-    m_citiesLayout->setSpacing(8);
-    m_citiesLayout->addStretch();
+    m_citiesLayout->setSpacing(2);
     
     // 组装主布局
     m_mainLayout->addLayout(titleLayout);
@@ -235,6 +232,7 @@ void TimezoneWindow::reloadSettings()
 {
     loadSettings();
     updateCityTimes();
+    adjustSize();
 }
 
 void TimezoneWindow::createCityTimeDisplay()
@@ -277,9 +275,9 @@ void TimezoneWindow::createCityTimeDisplay()
         cityContainer->setStyleSheet(
             "background: transparent; "
             "border-radius: 6px; "
-            "padding: 5px 0;"
         );
         cityContainer->setProperty("cityIndex", i);
+        cityContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         
         // 为容器添加鼠标事件
         cityContainer->installEventFilter(this);
@@ -287,7 +285,7 @@ void TimezoneWindow::createCityTimeDisplay()
         // 创建城市布局
         QHBoxLayout *cityLayout = new QHBoxLayout(cityContainer);
         cityLayout->setContentsMargins(0, 0, 0, 0);
-        cityLayout->setSpacing(15);
+        //cityLayout->setSpacing(15);
         
         // 城市名称标签
         QLabel *cityNameLabel = new QLabel(city.name);
@@ -299,15 +297,13 @@ void TimezoneWindow::createCityTimeDisplay()
         );
         cityNameLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         cityNameLabel->setToolTip(city.name);
+        //cityNameLabel->setWordWrap(true);
         
         // 时间标签
         QLabel *timeLabel = new QLabel();
-        timeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        timeLabel->setAlignment(Qt::AlignRight);
         timeLabel->setTextFormat(Qt::RichText);
         timeLabel->setStyleSheet(
-            "font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; "
-            "font-size: 24px; "
-            "font-weight: bold; "
             "color: white;"
         );
         // 设置最小宽度以确保时间始终可见
@@ -328,6 +324,9 @@ void TimezoneWindow::createCityTimeDisplay()
     }
     
     updateCityTimes();
+    
+    // 调整窗口大小以适应城市数量变化
+    adjustSize();
 }
 
 void TimezoneWindow::updateTimeDisplay()
