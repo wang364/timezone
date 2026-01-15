@@ -1,5 +1,6 @@
 #include "SettingsWindow.h"
 #include "CityManager.h"
+#include "TimezoneWindow.h"
 #include <QApplication>
 #include <QTimeZone>
 #include <QTabWidget>
@@ -12,10 +13,11 @@
 #include <QInputDialog>
 #include <QKeyEvent>
 
-SettingsWindow::SettingsWindow(QWidget *parent)
+SettingsWindow::SettingsWindow(TimezoneWindow *timezoneWindow, QWidget *parent)
     : QWidget(parent)
     , m_settings(new QSettings("TimezoneApp", "TimezoneTool"))
     , m_dataLoaded(false)
+    , m_timezoneWindow(timezoneWindow)
 {
     setupUI();
     loadSettings();
@@ -57,9 +59,17 @@ void SettingsWindow::setupUI()
     m_dateFormatComboBox->addItem("MM/DD/YYYY", "MM/dd/yyyy");
     m_dateFormatComboBox->addItem("DD/MM/YYYY", "dd/MM/yyyy");
     
+    m_weekdayFormatLabel = new QLabel("星期格式:");
+    m_weekdayFormatComboBox = new QComboBox();
+    m_weekdayFormatComboBox->addItem("周一", "ddd");
+    m_weekdayFormatComboBox->addItem("星期一", "dddd");
+    m_weekdayFormatComboBox->addItem("Mon", "ddd");
+    m_weekdayFormatComboBox->addItem("Monday", "dddd");
+    
     m_startWithSystemCheckBox = new QCheckBox("开机自启动");
     m_showSecondsCheckBox = new QCheckBox("显示秒数");
     m_showDateCheckBox = new QCheckBox("显示日期");
+    m_showWeekdayCheckBox = new QCheckBox("显示星期");
     
     generalLayout->addWidget(m_formatLabel);
     generalLayout->addWidget(m_formatComboBox);
@@ -67,9 +77,13 @@ void SettingsWindow::setupUI()
     generalLayout->addWidget(m_dateFormatLabel);
     generalLayout->addWidget(m_dateFormatComboBox);
     generalLayout->addSpacing(10);
+    generalLayout->addWidget(m_weekdayFormatLabel);
+    generalLayout->addWidget(m_weekdayFormatComboBox);
+    generalLayout->addSpacing(10);
     generalLayout->addWidget(m_startWithSystemCheckBox);
     generalLayout->addWidget(m_showSecondsCheckBox);
     generalLayout->addWidget(m_showDateCheckBox);
+    generalLayout->addWidget(m_showWeekdayCheckBox);
     generalLayout->addStretch();
     
     setupCityManagementTab();
@@ -135,7 +149,6 @@ void SettingsWindow::setupCityManagementTab()
     );
     
     m_citySearchEdit->setCompleter(m_cityCompleter);
-    m_citySearchEdit->setEnabled(false);
     
     searchLayout->addWidget(searchLabel);
     searchLayout->addWidget(m_citySearchEdit);
@@ -210,9 +223,11 @@ void SettingsWindow::loadSettings()
 {
     QString timeFormat = m_settings->value("timeFormat", "HH:mm:ss").toString();
     QString dateFormat = m_settings->value("dateFormat", "yyyy-MM-dd").toString();
+    QString weekdayFormat = m_settings->value("weekdayFormat", "ddd").toString();
     bool startWithSystem = m_settings->value("startWithSystem", false).toBool();
     bool showSeconds = m_settings->value("showSeconds", true).toBool();
     bool showDate = m_settings->value("showDate", true).toBool();
+    bool showWeekday = m_settings->value("showWeekday", false).toBool();
     
     int formatIndex = m_formatComboBox->findData(timeFormat);
     if (formatIndex >= 0) {
@@ -224,20 +239,33 @@ void SettingsWindow::loadSettings()
         m_dateFormatComboBox->setCurrentIndex(dateFormatIndex);
     }
     
+    int weekdayFormatIndex = m_weekdayFormatComboBox->findData(weekdayFormat);
+    if (weekdayFormatIndex >= 0) {
+        m_weekdayFormatComboBox->setCurrentIndex(weekdayFormatIndex);
+    }
+    
     m_startWithSystemCheckBox->setChecked(startWithSystem);
     m_showSecondsCheckBox->setChecked(showSeconds);
     m_showDateCheckBox->setChecked(showDate);
+    m_showWeekdayCheckBox->setChecked(showWeekday);
 }
 
 void SettingsWindow::onSaveSettings()
 {
     m_settings->setValue("timeFormat", m_formatComboBox->currentData().toString());
     m_settings->setValue("dateFormat", m_dateFormatComboBox->currentData().toString());
+    m_settings->setValue("weekdayFormat", m_weekdayFormatComboBox->currentData().toString());
     m_settings->setValue("startWithSystem", m_startWithSystemCheckBox->isChecked());
     m_settings->setValue("showSeconds", m_showSecondsCheckBox->isChecked());
     m_settings->setValue("showDate", m_showDateCheckBox->isChecked());
+    m_settings->setValue("showWeekday", m_showWeekdayCheckBox->isChecked());
     
     m_settings->sync();
+    
+    if (m_timezoneWindow) {
+        m_timezoneWindow->reloadSettings();
+    }
+    
     close();
 }
 
@@ -277,7 +305,6 @@ void SettingsWindow::onDataLoadingFinished(int cityCount)
     m_allCitiesList = CityManager::instance().getAllAvailableCities();
     
     m_cityListModel->setStringList(m_allCitiesList);
-    m_citySearchEdit->setEnabled(true);
     
     qDebug() << "补全器模型已更新，包含" << m_allCitiesList.size() << "个城市";
 }
@@ -290,6 +317,12 @@ void SettingsWindow::onAddCityFromSearch()
         return;
     }
     
+    addCityByName(cityName);
+    m_citySearchEdit->clear();
+}
+
+void SettingsWindow::addCityByName(const QString &cityName)
+{
     // 检查输入的城市是否有效（有时区信息）
     QString timezoneId = CityManager::instance().getTimezoneForCity(cityName);
     if (timezoneId == QTimeZone::systemTimeZoneId()) {
@@ -297,28 +330,6 @@ void SettingsWindow::onAddCityFromSearch()
         QMessageBox::warning(this, "警告", QString("城市 '%1' 未找到或不在可用列表中").arg(cityName));
         return;
     }
-    
-    addCityByName(cityName);
-    m_citySearchEdit->clear();
-}
-
-void SettingsWindow::addCityByName(const QString &cityName)
-{
-    QString timezoneId;
-    if (cityName == "北京" || cityName == "上海" || cityName == "广州" || cityName == "深圳") {
-        timezoneId = "Asia/Shanghai";
-    } else if (cityName == "纽约" || cityName == "华盛顿") {
-        timezoneId = "America/New_York";
-    } else if (cityName == "洛杉矶" || cityName == "旧金山") {
-        timezoneId = "America/Los_Angeles";
-    } else if (cityName == "伦敦") {
-        timezoneId = "Europe/London";
-    } else if (cityName == "东京") {
-        timezoneId = "Asia/Tokyo";
-    } else {
-        timezoneId = QTimeZone::systemTimeZoneId();
-    }
-    
     CityManager::instance().addCity(cityName, timezoneId);
     refreshCityList();
 }

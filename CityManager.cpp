@@ -56,6 +56,7 @@ void CityManager::addCity(const QString &cityName, const QString &timezoneId)
     }
     
     CityInfo newCity(cityName, timezoneId, m_cities.size());
+    qDebug() << "Add city name: " << cityName << " timezone: " << timezoneId;
     m_cities.append(newCity);
     saveCities();
     
@@ -118,60 +119,6 @@ QList<QString> CityManager::getAllAvailableCities() const
         // 数据尚未加载完成，返回常用城市列表
         return m_cityTimezoneMap.keys();
     }
-}
-
-QList<QString> CityManager::searchCities(const QString &keyword) const
-{
-    QList<QString> results;
-    if (keyword.isEmpty()) {
-        return results;
-    }
-    
-    QString lowerKeyword = keyword.toLower();
-    
-    // 使用QMap来存储城市名称和匹配分数，以便排序
-    QMap<int, QString> scoredResults;
-    
-    // 使用互斥锁确保线程安全
-    QMutexLocker locker(&m_dataMutex);
-    
-    // 如果数据已经加载完成，使用内存中的完整数据
-    if (m_dataLoaded) {
-        // 搜索所有可用城市
-        for (const QString &city : m_allAvailableCities) {
-            QString lowerCity = city.toLower();
-            int score = calculateMatchScore(lowerCity, lowerKeyword);
-            
-            if (score > 0) {
-                // 使用负数作为键，以便按分数降序排序
-                scoredResults.insert(-score, city);
-            }
-        }
-    } else {
-        // 数据尚未加载完成，使用缓存中的常用城市
-        for (auto it = m_cityTimezoneMap.constBegin(); it != m_cityTimezoneMap.constEnd(); ++it) {
-            const QString &city = it.key();
-            QString lowerCity = city.toLower();
-            int score = calculateMatchScore(lowerCity, lowerKeyword);
-            
-            if (score > 0) {
-                // 使用负数作为键，以便按分数降序排序
-                scoredResults.insert(-score, city);
-            }
-        }
-    }
-    
-    // 将结果按分数从高到低排序
-    for (const QString &city : scoredResults) {
-        results.append(city);
-    }
-    
-    // 限制返回结果数量，避免下拉列表过长
-    if (results.size() > 20) {
-        results = results.mid(0, 20);
-    }
-    
-    return results;
 }
 
 int CityManager::calculateMatchScore(const QString &lowerCity, const QString &lowerKeyword) const
@@ -319,8 +266,37 @@ void CityManager::loadAllCitiesData()
     
     QTextStream in(&file);
     in.setEncoding(QStringConverter::Utf8);
+
+    // 一次性读取所有数据
+    QString allData = in.readAll();
+    file.close();
+
+    QStringList lines = allData.split('\n', Qt::SkipEmptyParts);
+
+    // 预分配内存以提高性能
+    int estimatedSize = lines.size();
+    m_allAvailableCities.reserve(estimatedSize * 2); // 假设每行平均有2个城市名
     
-    int cityCount = 0;
+    // 使用索引循环而不是迭代器（性能更好）
+    for (int i = 0; i < lines.size(); ++i) {
+        QStringList parts = lines[i].split('\t');
+        
+        if (parts.size() >= 2) {
+            QStringList cityNames = parts[0].split(',');
+            
+            // 使用 move 语义避免拷贝
+            for (QString &cityName : cityNames) {
+                QString trimmedName = cityName.trimmed();
+                if (!trimmedName.isEmpty()) {
+                    m_cityTimezoneMap[trimmedName] = parts[1];
+                    m_allAvailableCities.append(std::move(trimmedName));
+                }
+            }
+        }
+    }
+
+
+    /* int cityCount = 0;
     
     while (!in.atEnd()) {
         QString line = in.readLine();
@@ -332,7 +308,7 @@ void CityManager::loadAllCitiesData()
             
             QStringList cityNames = alternatenames.split(',');
             m_allAvailableCities.append(cityNames);
-            /* for (const QString &cityName : cityNames) {
+            for (const QString &cityName : cityNames) {
                 QString trimmedName = cityName.trimmed();
                 if (!trimmedName.isEmpty()) {
                     m_cityTimezoneMap[trimmedName] = timezone;
@@ -342,11 +318,11 @@ void CityManager::loadAllCitiesData()
                         cityCount++;
                     }
                 }
-            } */
+            } 
         }
     }
     
-    file.close();
+    file.close(); */
     
     m_dataLoaded = true;
     

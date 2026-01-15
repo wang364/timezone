@@ -16,6 +16,8 @@ class TrayIcon : public QSystemTrayIcon
 public:
     explicit TrayIcon(QObject *parent = nullptr);
     ~TrayIcon();
+    
+    TimezoneWindow* getTimezoneWindow() const { return m_timezoneWindow; }
 
 private slots:
     void onShowSettings();

@@ -3,11 +3,17 @@
 #include <QCloseEvent>
 #include <QDateTime>
 #include <QTimeZone>
-#include <QScrollArea>
 #include <QGroupBox>
-#include <QSpacerItem>
 #include <QPushButton>
 #include <QMouseEvent>
+#include <QPropertyAnimation>
+#include <QPainter>
+#include <QLinearGradient>
+#include <QPainterPath>
+#include <QPaintEvent>
+#include <QHoverEvent>
+#include <QEvent>
+#include <QDebug>
 
 TimezoneWindow::TimezoneWindow(QWidget *parent)
     : QWidget(parent)
@@ -15,12 +21,13 @@ TimezoneWindow::TimezoneWindow(QWidget *parent)
     , m_settings(new QSettings("TimezoneApp", "TimezoneTool"))
     , m_dragging(false)
     , m_dragPosition(0, 0)
+    , m_hoveredCityIndex(-1)
 {
     setupUI();
     loadSettings();
     
     setWindowTitle("时区显示");
-    setFixedSize(300, 400);
+    setMinimumSize(250, 150);
     
     // 设置窗口标志：不在任务栏显示，无边框，保持置顶
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -41,101 +48,249 @@ TimezoneWindow::~TimezoneWindow()
 
 void TimezoneWindow::setupUI()
 {
+    // 创建主布局
     m_mainLayout = new QVBoxLayout(this);
+    m_mainLayout->setContentsMargins(15, 10, 15, 15);
+    m_mainLayout->setSpacing(10);
     
-    // 添加标题栏和关闭按钮
+    // 创建标题栏区域
     QHBoxLayout *titleLayout = new QHBoxLayout();
+    titleLayout->setContentsMargins(5, 0, 5, 0);
     
-    // 创建标题栏容器
-    QWidget *titleBar = new QWidget();
-    titleBar->setFixedHeight(30);
-    titleBar->setStyleSheet("QWidget { background: #f0f0f0; border-bottom: 1px solid #ccc; }");
+    // 标题标签
+    QLabel *titleLabel = new QLabel("时区工具");
+    titleLabel->setStyleSheet(
+        "font-size: 12px; "
+        "font-weight: bold; "
+        "color: rgba(255, 255, 255, 200); "
+        "padding: 0 5px;"
+    );
     
-    QHBoxLayout *titleBarLayout = new QHBoxLayout(titleBar);
-    titleBarLayout->setContentsMargins(10, 0, 10, 0);
-    
-    QLabel *titleLabel = new QLabel("时区显示");
-    titleLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
-    
+    // 关闭按钮
     QPushButton *closeButton = new QPushButton("×");
-    closeButton->setFixedSize(20, 20);
-    closeButton->setStyleSheet("QPushButton { background: transparent; border: none; font-size: 16px; } QPushButton:hover { background: #e0e0e0; }");
+    closeButton->setFixedSize(22, 22);
+    closeButton->setStyleSheet(
+        "QPushButton { "
+        "    background: transparent; "
+        "    border: none; "
+        "    font-size: 16px; "
+        "    color: rgba(255, 255, 255, 200); "
+        "    border-radius: 4px; "
+        "    padding: 0; "
+        "}"
+        "QPushButton:hover { "
+        "    background: rgba(255, 255, 255, 30); "
+        "}"
+        "QPushButton:pressed { "
+        "    background: rgba(255, 255, 255, 50); "
+        "}"
+    );
     
-    titleBarLayout->addWidget(titleLabel);
-    titleBarLayout->addStretch();
-    titleBarLayout->addWidget(closeButton);
+    titleLayout->addWidget(titleLabel);
+    titleLayout->addStretch();
+    titleLayout->addWidget(closeButton);
     
-    titleLayout->addWidget(titleBar);
+    // 创建城市列表容器
+    m_citiesGroup = new QGroupBox();
+    m_citiesGroup->setStyleSheet(
+        "QGroupBox { "
+        "    border: none; "
+        "    background: transparent; "
+        "    margin: 0; "
+        "    padding: 5px 0; "
+        "}"
+    );
     
-    m_scrollArea = new QScrollArea();
-    m_scrollWidget = new QWidget();
-    m_scrollLayout = new QVBoxLayout(m_scrollWidget);
-    
-    m_citiesGroup = new QGroupBox("城市时间");
     m_citiesLayout = new QVBoxLayout(m_citiesGroup);
+    m_citiesLayout->setContentsMargins(0, 0, 0, 0);
+    m_citiesLayout->setSpacing(8);
+    m_citiesLayout->addStretch();
     
-    m_scrollLayout->addWidget(m_citiesGroup);
-    m_scrollLayout->addStretch();
-    
-    m_scrollArea->setWidget(m_scrollWidget);
-    m_scrollArea->setWidgetResizable(true);
-    
+    // 组装主布局
     m_mainLayout->addLayout(titleLayout);
-    m_mainLayout->addWidget(m_scrollArea);
+    m_mainLayout->addWidget(m_citiesGroup, 1);
     
     // 设置窗口样式
-    setStyleSheet("QWidget { background: white; border: 1px solid #ccc; }");
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_Hover); // 启用悬停事件
+    setStyleSheet(
+        "QWidget#TimezoneWindow { "
+        "    background: rgba(25, 25, 35, 200); "
+        "    border: 1px solid rgba(255, 255, 255, 30); "
+        "    border-radius: 10px; "
+        "}"
+    );
     
+    // 设置对象名称以便样式应用
+    setObjectName("TimezoneWindow");
+    
+    // 创建淡入淡出动画
+    m_opacityAnimation = new QPropertyAnimation(this, "windowOpacity", this);
+    m_opacityAnimation->setDuration(FADE_DURATION);
+    m_isFadingOut = false;
+    m_fadeOutTimer = 0;
+    
+    // 连接信号槽
     connect(closeButton, &QPushButton::clicked, this, &TimezoneWindow::hide);
+    connect(this, &QWidget::show, this, [this]() {
+        m_isFadingOut = false;
+        m_fadeOutTimer = 0;
+        setWindowOpacity(1.0);
+    });
+}
+
+void TimezoneWindow::enterEvent(QEnterEvent *event)
+{
+    Q_UNUSED(event);
+    m_isFadingOut = false;
+    m_fadeOutTimer = 0;
+    
+    // 如果正在淡出，取消淡出动画
+    if (m_opacityAnimation->state() == QPropertyAnimation::Running) {
+        m_opacityAnimation->stop();
+    }
+    
+    // 恢复不透明度
+    setWindowOpacity(1.0);
+}
+
+void TimezoneWindow::leaveEvent(QEvent *event)
+{
+    Q_UNUSED(event);
+    m_isFadingOut = true;
+    m_fadeOutTimer = 0;
+}
+
+void TimezoneWindow::paintEvent(QPaintEvent *event)
+{
+    // 创建自定义绘制
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    
+    // 绘制半透明背景
+    QRect backgroundRect = rect();
+    QPainterPath path;
+    path.addRoundedRect(backgroundRect, 10, 10);
+    
+    // 渐变背景
+    QLinearGradient gradient(backgroundRect.topLeft(), backgroundRect.bottomRight());
+    gradient.setColorAt(0.0, QColor(25, 25, 35, 220));
+    gradient.setColorAt(1.0, QColor(35, 35, 45, 220));
+    
+    painter.fillPath(path, gradient);
+    
+    // 绘制边框
+    painter.setPen(QPen(QColor(255, 255, 255, 40), 1));
+    painter.drawRoundedRect(backgroundRect.adjusted(0.5, 0.5, -0.5, -0.5), 10, 10);
+    
+    QWidget::paintEvent(event);
 }
 
 void TimezoneWindow::loadSettings()
 {
     m_timeFormat = m_settings->value("timeFormat", "HH:mm:ss").toString();
     m_dateFormat = m_settings->value("dateFormat", "yyyy-MM-dd").toString();
+    m_weekdayFormat = m_settings->value("weekdayFormat", "ddd").toString();
     m_showSeconds = m_settings->value("showSeconds", true).toBool();
     m_showDate = m_settings->value("showDate", true).toBool();
+    m_showWeekday = m_settings->value("showWeekday", false).toBool();
     
     if (!m_showSeconds) {
         m_timeFormat = m_timeFormat.replace(":ss", "");
     }
 }
 
+void TimezoneWindow::reloadSettings()
+{
+    loadSettings();
+    updateCityTimes();
+}
+
 void TimezoneWindow::createCityTimeDisplay()
 {
     QList<CityInfo> cities = CityManager::instance().getCities();
     
+    // 清除旧的城市显示
     QLayoutItem *child;
     while ((child = m_citiesLayout->takeAt(0)) != nullptr) {
         delete child->widget();
         delete child;
     }
     
+    // 清除标签列表
     m_cityTimeLabels.clear();
+    m_cityNameLabels.clear();
+    m_cityContainers.clear();
     
     if (cities.isEmpty()) {
-        QLabel *noCitiesLabel = new QLabel("暂无城市，请在设置中添加城市");
+        // 显示空状态
+        QLabel *noCitiesLabel = new QLabel("暂无城市，请在设置中添加");
         noCitiesLabel->setAlignment(Qt::AlignCenter);
-        noCitiesLabel->setStyleSheet("color: gray; font-style: italic; margin: 20px;");
+        noCitiesLabel->setStyleSheet(
+            "color: rgba(255, 255, 255, 160); "
+            "font-style: italic; "
+            "font-size: 12px; "
+            "padding: 30px 0;"
+        );
         m_citiesLayout->addWidget(noCitiesLabel);
         return;
     }
     
-    for (const CityInfo &city : cities) {
-        QHBoxLayout *cityLayout = new QHBoxLayout();
+    // 为每个城市创建显示容器
+    for (int i = 0; i < cities.size(); ++i) {
+        const CityInfo &city = cities[i];
         
+        // 创建城市容器
+        QWidget *cityContainer = new QWidget();
+        cityContainer->setObjectName(QString("cityContainer_%1").arg(i));
+        cityContainer->setStyleSheet(
+            "background: transparent; "
+            "border-radius: 6px; "
+            "padding: 5px 0;"
+        );
+        cityContainer->setProperty("cityIndex", i);
+        
+        // 为容器添加鼠标事件
+        cityContainer->installEventFilter(this);
+        
+        // 创建城市布局
+        QHBoxLayout *cityLayout = new QHBoxLayout(cityContainer);
+        cityLayout->setContentsMargins(0, 0, 0, 0);
+        cityLayout->setSpacing(15);
+        
+        // 城市名称标签
         QLabel *cityNameLabel = new QLabel(city.name);
-        cityNameLabel->setFixedWidth(80);
+        cityNameLabel->setStyleSheet(
+            "font-size: 12px; "
+            "font-weight: normal; "
+            "color: rgba(255, 255, 255, 180); "
+            "min-width: 65px;"
+        );
+        cityNameLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        cityNameLabel->setToolTip(city.name);
         
+        // 时间标签
         QLabel *timeLabel = new QLabel();
-        timeLabel->setAlignment(Qt::AlignRight);
-        timeLabel->setStyleSheet("font-family: 'Courier New'; font-size: 12px;");
+        timeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        timeLabel->setTextFormat(Qt::RichText);
+        timeLabel->setStyleSheet(
+            "font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; "
+            "font-size: 24px; "
+            "font-weight: bold; "
+            "color: white;"
+        );
         
+        // 将组件添加到布局
         cityLayout->addWidget(cityNameLabel);
         cityLayout->addWidget(timeLabel);
         
-        m_citiesLayout->addLayout(cityLayout);
+        // 将容器添加到主布局
+        m_citiesLayout->addWidget(cityContainer);
+        
+        // 保存引用
+        m_cityNameLabels.append(cityNameLabel);
         m_cityTimeLabels.append(timeLabel);
+        m_cityContainers.append(cityContainer);
     }
     
     updateCityTimes();
@@ -143,8 +298,20 @@ void TimezoneWindow::createCityTimeDisplay()
 
 void TimezoneWindow::updateTimeDisplay()
 {
-    // 只更新城市时间，不再显示本地时间和UTC时间
+    // 更新城市时间
     updateCityTimes();
+    
+    // 处理自动淡出逻辑
+    if (m_isFadingOut) {
+        m_fadeOutTimer++;
+        if (m_fadeOutTimer >= FADE_OUT_DELAY / 1000) {
+            if (m_opacityAnimation->state() == QPropertyAnimation::Stopped) {
+                m_opacityAnimation->setStartValue(1.0);
+                m_opacityAnimation->setEndValue(0.5);
+                m_opacityAnimation->start();
+            }
+        }
+    }
 }
 
 void TimezoneWindow::updateCityTimes()
@@ -166,16 +333,77 @@ void TimezoneWindow::updateCityTimes()
             QDateTime cityTime = utcTime.toTimeZone(timezone);
             QString timeStr;
             
-            if (m_showDate) {
+            // 根据设置构建时间显示内容
+            if (m_showDate && m_showWeekday) {
                 QString dateStr = cityTime.toString(m_dateFormat);
-                timeStr = QString("%1\n%2").arg(dateStr).arg(cityTime.toString(m_timeFormat));
+                QString weekdayStr = cityTime.toString(m_weekdayFormat);
+                QString timeOnlyStr = cityTime.toString(m_timeFormat);
+                
+                timeStr = QString(
+                    "<div style='text-align: right;'>"
+                    "<span style='font-size: 10px; color: rgba(255, 255, 255, 150);'>%1 %2</span><br>"
+                    "<span style='font-size: 24px; font-weight: bold; color: white;'>%3</span>"
+                    "</div>"
+                ).arg(dateStr, weekdayStr, timeOnlyStr);
+            } else if (m_showDate) {
+                QString dateStr = cityTime.toString(m_dateFormat);
+                QString timeOnlyStr = cityTime.toString(m_timeFormat);
+                
+                timeStr = QString(
+                    "<div style='text-align: right;'>"
+                    "<span style='font-size: 10px; color: rgba(255, 255, 255, 150);'>%1</span><br>"
+                    "<span style='font-size: 24px; font-weight: bold; color: white;'>%2</span>"
+                    "</div>"
+                ).arg(dateStr, timeOnlyStr);
+            } else if (m_showWeekday) {
+                QString weekdayStr = cityTime.toString(m_weekdayFormat);
+                QString timeOnlyStr = cityTime.toString(m_timeFormat);
+                
+                timeStr = QString(
+                    "<div style='text-align: right;'>"
+                    "<span style='font-size: 10px; color: rgba(255, 255, 255, 150);'>%1</span><br>"
+                    "<span style='font-size: 24px; font-weight: bold; color: white;'>%2</span>"
+                    "</div>"
+                ).arg(weekdayStr, timeOnlyStr);
             } else {
-                timeStr = cityTime.toString(m_timeFormat);
+                QString timeOnlyStr = cityTime.toString(m_timeFormat);
+                
+                timeStr = QString(
+                    "<div style='text-align: right;'>"
+                    "<span style='font-size: 24px; font-weight: bold; color: white;'>%1</span>"
+                    "</div>"
+                ).arg(timeOnlyStr);
             }
             
             m_cityTimeLabels[i]->setText(timeStr);
         } else {
-            m_cityTimeLabels[i]->setText("时区无效");
+            m_cityTimeLabels[i]->setText(
+                "<div style='text-align: right;'>"
+                "<span style='font-size: 12px; color: rgba(255, 100, 100, 200);'>时区无效</span>"
+                "</div>"
+            );
+        }
+    }
+}
+
+// 城市容器的悬停事件处理
+void TimezoneWindow::onCityHovered(int index, bool isHovered)
+{
+    if (index >= 0 && index < m_cityContainers.size()) {
+        if (isHovered) {
+            m_hoveredCityIndex = index;
+            m_cityContainers[index]->setStyleSheet(
+                "background: rgba(255, 255, 255, 10); "
+                "border-radius: 6px;"
+            );
+        } else {
+            if (m_hoveredCityIndex == index) {
+                m_hoveredCityIndex = -1;
+            }
+            m_cityContainers[index]->setStyleSheet(
+                "background: transparent; "
+                "border-radius: 6px;"
+            );
         }
     }
 }
@@ -198,12 +426,6 @@ void TimezoneWindow::mousePressEvent(QMouseEvent *event)
 
 void TimezoneWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    // 更新鼠标光标
-    if (event->pos().y() <= 30) {
-        setCursor(Qt::OpenHandCursor);
-    } else {
-        setCursor(Qt::ArrowCursor);
-    }
     
     // 处理拖动
     if (m_dragging && (event->buttons() & Qt::LeftButton)) {
@@ -216,12 +438,6 @@ void TimezoneWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         m_dragging = false;
-        // 鼠标释放后恢复光标状态
-        if (event->pos().y() <= 30) {
-            setCursor(Qt::OpenHandCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
     }
     QWidget::mouseReleaseEvent(event);
 }
@@ -231,4 +447,25 @@ void TimezoneWindow::closeEvent(QCloseEvent *event)
     // 对于无边框窗口，直接隐藏而不是关闭
     hide();
     event->ignore();
+}
+
+bool TimezoneWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    // 处理城市容器的悬停事件
+    if (obj->property("cityIndex").isValid()) {
+        int index = obj->property("cityIndex").toInt();
+        
+        switch (event->type()) {
+        case QEvent::Enter:
+            onCityHovered(index, true);
+            return true;
+        case QEvent::Leave:
+            onCityHovered(index, false);
+            return true;
+        default:
+            break;
+        }
+    }
+    
+    return QWidget::eventFilter(obj, event);
 }

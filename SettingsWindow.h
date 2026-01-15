@@ -18,12 +18,14 @@
 #include <QSortFilterProxyModel>
 #include "CityManager.h"
 
+class TimezoneWindow;
+
 class SettingsWindow : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit SettingsWindow(QWidget *parent = nullptr);
+    explicit SettingsWindow(TimezoneWindow *timezoneWindow = nullptr, QWidget *parent = nullptr);
     ~SettingsWindow();
 
 private slots:
@@ -59,9 +61,13 @@ private:
     QLabel *m_dateFormatLabel;
     QComboBox *m_dateFormatComboBox;
     
+    QLabel *m_weekdayFormatLabel;
+    QComboBox *m_weekdayFormatComboBox;
+    
     QCheckBox *m_startWithSystemCheckBox;
     QCheckBox *m_showSecondsCheckBox;
     QCheckBox *m_showDateCheckBox;
+    QCheckBox *m_showWeekdayCheckBox;
     
     QHBoxLayout *m_buttonLayout;
     QPushButton *m_saveButton;
@@ -80,6 +86,8 @@ private:
     QSortFilterProxyModel *m_proxyModel;
     QStringList m_allCitiesList;
     bool m_dataLoaded;
+    
+    TimezoneWindow *m_timezoneWindow;
 };
 
 #endif // SETTINGSWINDOW_H

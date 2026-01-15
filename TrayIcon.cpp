@@ -50,9 +50,9 @@ TrayIcon::TrayIcon(QObject *parent)
         qWarning() << "没有检测到系统托盘";
     }
 
-    m_settingsWindow = new SettingsWindow();
+    m_timezoneWindow = new TimezoneWindow();
+    m_settingsWindow = new SettingsWindow(m_timezoneWindow);
 
-    
     show();
     
     // 程序启动后默认显示时区窗口
@@ -88,19 +88,14 @@ void TrayIcon::createTrayMenu()
 
 void TrayIcon::onShowSettings()
 {
-    if (!m_settingsWindow) {
-        m_settingsWindow = new SettingsWindow();
+    if (m_settingsWindow) {
+        m_settingsWindow->show();
+        m_settingsWindow->activateWindow();
     }
-    m_settingsWindow->show();
-    m_settingsWindow->activateWindow();
 }
 
 void TrayIcon::onToggleTimezoneWindow()
 {
-    if (!m_timezoneWindow) {
-        m_timezoneWindow = new TimezoneWindow();
-    }
-    
     if (m_timezoneWindowVisible) {
         m_timezoneWindow->hide();
         m_toggleTimezoneAction->setText("显示时区窗口");

@@ -41,7 +41,6 @@ public:
     
     QList<CityInfo> getCities() const;
     QList<QString> getAllAvailableCities() const;
-    QList<QString> searchCities(const QString &keyword) const;
     
     bool cityExists(const QString &cityName) const;
     QString getTimezoneForCity(const QString &cityName) const;

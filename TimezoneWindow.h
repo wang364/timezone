@@ -8,8 +8,8 @@
 #include <QTimer>
 #include <QTimeZone>
 #include <QSettings>
-#include <QScrollArea>
 #include <QGroupBox>
+#include <QEnterEvent>
 #include "CityManager.h"
 
 class TimezoneWindow : public QWidget
@@ -19,6 +19,8 @@ class TimezoneWindow : public QWidget
 public:
     explicit TimezoneWindow(QWidget *parent = nullptr);
     ~TimezoneWindow();
+    
+    void reloadSettings();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -29,6 +31,7 @@ protected:
 private slots:
     void updateTimeDisplay();
     void onCitiesChanged();
+    void onCityHovered(int index, bool isHovered);
 
 private:
     void setupUI();
@@ -36,10 +39,13 @@ private:
     void createCityTimeDisplay();
     void updateCityTimes();
     
+    // 事件处理
+    void enterEvent(QEnterEvent *event) override;
+    void leaveEvent(QEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
+    
     QVBoxLayout *m_mainLayout;
-    QScrollArea *m_scrollArea;
-    QWidget *m_scrollWidget;
-    QVBoxLayout *m_scrollLayout;
     
     QGroupBox *m_citiesGroup;
     QVBoxLayout *m_citiesLayout;
@@ -49,13 +55,25 @@ private:
     
     QString m_timeFormat;
     QString m_dateFormat;
+    QString m_weekdayFormat;
     bool m_showSeconds;
     bool m_showDate;
+    bool m_showWeekday;
     
     QList<QLabel*> m_cityTimeLabels;
+    QList<QLabel*> m_cityNameLabels;
+    QList<QWidget*> m_cityContainers;
     
     bool m_dragging;
     QPoint m_dragPosition;
+    int m_hoveredCityIndex;
+    
+    // 动画和过渡效果
+    QPropertyAnimation *m_opacityAnimation;
+    bool m_isFadingOut;
+    int m_fadeOutTimer;
+    const int FADE_OUT_DELAY = 5000; // 5秒后淡出
+    const int FADE_DURATION = 1000; // 1秒淡出动画
 };
 
 #endif // TIMEZONEWINDOW_H
