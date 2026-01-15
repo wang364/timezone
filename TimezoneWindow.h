@@ -72,6 +72,7 @@ private:
     // 动画和过渡效果
     QPropertyAnimation *m_opacityAnimation;
     bool m_isFadingOut;
+    bool m_hasFadedOut; // 标记是否已经完成淡出
     int m_fadeOutTimer;
     const int FADE_OUT_DELAY = 5000; // 5秒后淡出
     const int FADE_DURATION = 1000; // 1秒淡出动画

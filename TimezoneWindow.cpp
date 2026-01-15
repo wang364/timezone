@@ -137,14 +137,23 @@ void TimezoneWindow::setupUI()
     m_opacityAnimation = new QPropertyAnimation(this, "windowOpacity", this);
     m_opacityAnimation->setDuration(FADE_DURATION);
     m_isFadingOut = false;
+    m_hasFadedOut = false;
     m_fadeOutTimer = 0;
     
     // 连接信号槽
     connect(closeButton, &QPushButton::clicked, this, &TimezoneWindow::hide);
     connect(this, &QWidget::show, this, [this]() {
         m_isFadingOut = false;
+        m_hasFadedOut = false;
         m_fadeOutTimer = 0;
         setWindowOpacity(1.0);
+    });
+    
+    // 连接动画完成信号
+    connect(m_opacityAnimation, &QPropertyAnimation::finished, this, [this]() {
+        if (m_isFadingOut) {
+            m_hasFadedOut = true;
+        }
     });
 }
 
@@ -152,6 +161,7 @@ void TimezoneWindow::enterEvent(QEnterEvent *event)
 {
     Q_UNUSED(event);
     m_isFadingOut = false;
+    m_hasFadedOut = false;
     m_fadeOutTimer = 0;
     
     // 如果正在淡出，取消淡出动画
@@ -167,6 +177,7 @@ void TimezoneWindow::leaveEvent(QEvent *event)
 {
     Q_UNUSED(event);
     m_isFadingOut = true;
+    m_hasFadedOut = false;
     m_fadeOutTimer = 0;
 }
 
@@ -326,12 +337,14 @@ void TimezoneWindow::updateTimeDisplay()
     
     // 处理自动淡出逻辑
     if (m_isFadingOut) {
-        m_fadeOutTimer++;
-        if (m_fadeOutTimer >= FADE_OUT_DELAY / 1000) {
-            if (m_opacityAnimation->state() == QPropertyAnimation::Stopped) {
-                m_opacityAnimation->setStartValue(1.0);
-                m_opacityAnimation->setEndValue(0.5);
-                m_opacityAnimation->start();
+        if (!m_hasFadedOut) {
+            m_fadeOutTimer++;
+            if (m_fadeOutTimer >= FADE_OUT_DELAY / 1000) {
+                if (m_opacityAnimation->state() == QPropertyAnimation::Stopped) {
+                    m_opacityAnimation->setStartValue(1.0);
+                    m_opacityAnimation->setEndValue(0.5);
+                    m_opacityAnimation->start();
+                }
             }
         }
     }
@@ -444,6 +457,13 @@ void TimezoneWindow::mousePressEvent(QMouseEvent *event)
         m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
         setCursor(Qt::ClosedHandCursor);
     }
+    
+    // 任何鼠标操作都重置淡出状态
+    m_isFadingOut = false;
+    m_hasFadedOut = false;
+    m_fadeOutTimer = 0;
+    setWindowOpacity(1.0);
+    
     QWidget::mousePressEvent(event);
 }
 
@@ -454,6 +474,13 @@ void TimezoneWindow::mouseMoveEvent(QMouseEvent *event)
     if (m_dragging && (event->buttons() & Qt::LeftButton)) {
         move(event->globalPosition().toPoint() - m_dragPosition);
     }
+    else {
+        // 任何鼠标移动都重置淡出状态
+        m_isFadingOut = false;
+        m_hasFadedOut = false;
+        m_fadeOutTimer = 0;
+        setWindowOpacity(1.0);
+    }
     QWidget::mouseMoveEvent(event);
 }
 
@@ -462,6 +489,13 @@ void TimezoneWindow::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         m_dragging = false;
     }
+    
+    // 任何鼠标操作都重置淡出状态
+    m_isFadingOut = false;
+    m_hasFadedOut = false;
+    m_fadeOutTimer = 0;
+    setWindowOpacity(1.0);
+    
     QWidget::mouseReleaseEvent(event);
 }
 
