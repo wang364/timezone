@@ -169,20 +169,7 @@ bool CityManager::isCityValid(const QString &cityName) const
     QMutexLocker locker(&m_dataMutex);
     
     // 检查城市是否存在于内存映射中
-    if (m_cityTimezoneMap.contains(cityName)) {
-        return true;
-    }
-    
-    // 检查是否是硬编码支持的城市
-    if (cityName == "北京" || cityName == "上海" || cityName == "广州" || cityName == "深圳"
-        || cityName == "纽约" || cityName == "华盛顿" || cityName == "洛杉矶" || cityName == "旧金山"
-        || cityName == "伦敦" || cityName == "东京" || cityName == "巴黎" || cityName == "柏林"
-        || cityName == "莫斯科" || cityName == "悉尼" || cityName == "首尔" || cityName == "新加坡"
-        || cityName == "迪拜" || cityName == "孟买" || cityName == "开罗" || cityName == "约翰内斯堡") {
-        return true;
-    }
-    
-    return false;
+    return m_cityTimezoneMap.contains(cityName);
 }
 
 QString CityManager::getTimezoneForCity(const QString &cityName) const
@@ -194,44 +181,12 @@ QString CityManager::getTimezoneForCity(const QString &cityName) const
     // 使用互斥锁确保线程安全
     QMutexLocker locker(&m_dataMutex);
     
-    // 首先尝试从内存映射中查找
+    // 只从内存映射中查找城市时区
     if (m_cityTimezoneMap.contains(cityName)) {
         return m_cityTimezoneMap.value(cityName);
     }
     
-    // 如果找不到，使用硬编码的映射作为后备
-    if (cityName == "北京" || cityName == "上海" || cityName == "广州" || cityName == "深圳") {
-        return "Asia/Shanghai";
-    } else if (cityName == "纽约" || cityName == "华盛顿") {
-        return "America/New_York";
-    } else if (cityName == "洛杉矶" || cityName == "旧金山") {
-        return "America/Los_Angeles";
-    } else if (cityName == "伦敦") {
-        return "Europe/London";
-    } else if (cityName == "东京") {
-        return "Asia/Tokyo";
-    } else if (cityName == "巴黎") {
-        return "Europe/Paris";
-    } else if (cityName == "柏林") {
-        return "Europe/Berlin";
-    } else if (cityName == "莫斯科") {
-        return "Europe/Moscow";
-    } else if (cityName == "悉尼") {
-        return "Australia/Sydney";
-    } else if (cityName == "首尔") {
-        return "Asia/Seoul";
-    } else if (cityName == "新加坡") {
-        return "Asia/Singapore";
-    } else if (cityName == "迪拜") {
-        return "Asia/Dubai";
-    } else if (cityName == "孟买") {
-        return "Asia/Kolkata";
-    } else if (cityName == "开罗") {
-        return "Africa/Cairo";
-    } else if (cityName == "约翰内斯堡") {
-        return "Africa/Johannesburg";
-    }
-    
+    // 如果找不到，返回系统时区ID
     return QTimeZone::systemTimeZoneId();
 }
 
@@ -313,35 +268,6 @@ void CityManager::loadAllCitiesData()
             }
         }
     }
-
-
-    /* int cityCount = 0;
-    
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        QStringList parts = line.split('\t');
-        
-        if (parts.size() >= 2) {
-            QString alternatenames = parts[0];
-            QString timezone = parts[1];
-            
-            QStringList cityNames = alternatenames.split(',');
-            m_allAvailableCities.append(cityNames);
-            for (const QString &cityName : cityNames) {
-                QString trimmedName = cityName.trimmed();
-                if (!trimmedName.isEmpty()) {
-                    m_cityTimezoneMap[trimmedName] = timezone;
-                    
-                    if (!m_allAvailableCities.contains(trimmedName)) {
-                        m_allAvailableCities.append(trimmedName);
-                        cityCount++;
-                    }
-                }
-            } 
-        }
-    }
-    
-    file.close(); */
     
     m_dataLoaded = true;
     
