@@ -232,7 +232,7 @@ void TimezoneWindow::reloadSettings()
 {
     loadSettings();
     updateCityTimes();
-    adjustSize();
+    //adjustSize();
 }
 
 void TimezoneWindow::createCityTimeDisplay()
@@ -326,7 +326,7 @@ void TimezoneWindow::createCityTimeDisplay()
     updateCityTimes();
     
     // 调整窗口大小以适应城市数量变化
-    adjustSize();
+    //adjustSize();
 }
 
 void TimezoneWindow::updateTimeDisplay()
@@ -419,6 +419,9 @@ void TimezoneWindow::updateCityTimes()
             );
         }
     }
+    
+    // 当时间标签内容发生变化（单行/多行切换）时，调整窗口大小
+    adjustSize();
 }
 
 // 城市容器的悬停事件处理

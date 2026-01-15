@@ -25,13 +25,6 @@ CityManager::CityManager(QObject *parent)
     // 调试输出：显示加载的城市数量
     qDebug() << "从设置加载的城市数量:" << m_cities.size();
     
-    if (m_cities.isEmpty()) {
-        addCity("北京", "Asia/Shanghai");
-        addCity("纽约", "America/New_York");
-        addCity("伦敦", "Europe/London");
-        addCity("东京", "Asia/Tokyo");
-        addCity("悉尼", "Australia/Sydney");
-    }
 }
 
 CityManager::~CityManager()
@@ -163,6 +156,32 @@ bool CityManager::cityExists(const QString &cityName) const
             return true;
         }
     }
+    return false;
+}
+
+bool CityManager::isCityValid(const QString &cityName) const
+{
+    if (cityName.isEmpty()) {
+        return false;
+    }
+    
+    // 使用互斥锁确保线程安全
+    QMutexLocker locker(&m_dataMutex);
+    
+    // 检查城市是否存在于内存映射中
+    if (m_cityTimezoneMap.contains(cityName)) {
+        return true;
+    }
+    
+    // 检查是否是硬编码支持的城市
+    if (cityName == "北京" || cityName == "上海" || cityName == "广州" || cityName == "深圳"
+        || cityName == "纽约" || cityName == "华盛顿" || cityName == "洛杉矶" || cityName == "旧金山"
+        || cityName == "伦敦" || cityName == "东京" || cityName == "巴黎" || cityName == "柏林"
+        || cityName == "莫斯科" || cityName == "悉尼" || cityName == "首尔" || cityName == "新加坡"
+        || cityName == "迪拜" || cityName == "孟买" || cityName == "开罗" || cityName == "约翰内斯堡") {
+        return true;
+    }
+    
     return false;
 }
 

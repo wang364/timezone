@@ -44,6 +44,7 @@ public:
     
     bool cityExists(const QString &cityName) const;
     QString getTimezoneForCity(const QString &cityName) const;
+    bool isCityValid(const QString &cityName) const;
 
 signals:
     void citiesChanged();

@@ -321,13 +321,13 @@ void SettingsWindow::onAddCityFromSearch()
 
 void SettingsWindow::addCityByName(const QString &cityName)
 {
-    // 检查输入的城市是否有效（有时区信息）
-    QString timezoneId = CityManager::instance().getTimezoneForCity(cityName);
-    if (timezoneId == QTimeZone::systemTimeZoneId()) {
-        // 如果返回的是系统时区，说明城市可能不存在
+    // 检查输入的城市是否有效（存在于可用列表中）
+    if (!CityManager::instance().isCityValid(cityName)) {
         QMessageBox::warning(this, "警告", QString("城市 '%1' 未找到或不在可用列表中").arg(cityName));
         return;
     }
+    
+    QString timezoneId = CityManager::instance().getTimezoneForCity(cityName);
     CityManager::instance().addCity(cityName, timezoneId);
     refreshCityList();
 }
