@@ -6,6 +6,8 @@
 #include <QGroupBox>
 #include <QPushButton>
 #include <QMouseEvent>
+#include <QSizePolicy>
+#include <QResizeEvent>
 #include <QPropertyAnimation>
 #include <QPainter>
 #include <QLinearGradient>
@@ -32,6 +34,10 @@ TimezoneWindow::TimezoneWindow(QWidget *parent)
     // 设置窗口标志：不在任务栏显示，无边框，保持置顶
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     
+    // 设置窗口大小约束
+    setMinimumSize(320, 150); // 确保足够的宽度显示时间
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    
     connect(m_updateTimer, &QTimer::timeout, this, &TimezoneWindow::updateTimeDisplay);
     m_updateTimer->start(1000);
     
@@ -39,6 +45,9 @@ TimezoneWindow::TimezoneWindow(QWidget *parent)
     
     updateTimeDisplay();
     createCityTimeDisplay();
+    
+    // 确保窗口根据内容自动调整大小
+    adjustSize();
 }
 
 TimezoneWindow::~TimezoneWindow()
@@ -186,6 +195,17 @@ void TimezoneWindow::paintEvent(QPaintEvent *event)
     QWidget::paintEvent(event);
 }
 
+void TimezoneWindow::resizeEvent(QResizeEvent *event)
+{
+    // 确保窗口大小不会小于最小尺寸
+    if (width() < minimumWidth() || height() < minimumHeight()) {
+        adjustSize();
+        return;
+    }
+    
+    QWidget::resizeEvent(event);
+}
+
 void TimezoneWindow::loadSettings()
 {
     m_timeFormat = m_settings->value("timeFormat", "HH:mm:ss").toString();
@@ -279,6 +299,9 @@ void TimezoneWindow::createCityTimeDisplay()
             "font-weight: bold; "
             "color: white;"
         );
+        // 设置最小宽度以确保时间始终可见
+        timeLabel->setMinimumWidth(120);
+        timeLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         
         // 将组件添加到布局
         cityLayout->addWidget(cityNameLabel);
