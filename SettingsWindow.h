@@ -16,6 +16,7 @@
 #include <QCompleter>
 #include <QStringListModel>
 #include <QSortFilterProxyModel>
+#include <QSizePolicy>
 #include "CityManager.h"
 
 class TimezoneWindow;
@@ -50,6 +51,7 @@ private:
     void setupCityManagementTab();
     void refreshCityList();
     void updateCityButtons();
+    void updateModifiedStatus();
     
     QTabWidget *m_tabWidget;
     
@@ -90,6 +92,7 @@ private:
     QSortFilterProxyModel *m_proxyModel;
     QStringList m_allCitiesList;
     bool m_dataLoaded;
+    bool m_settingsModified; // 跟踪设置是否被修改
     
     TimezoneWindow *m_timezoneWindow;
 };
