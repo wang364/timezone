@@ -12,6 +12,9 @@
 #include <QGroupBox>
 #include <QInputDialog>
 #include <QKeyEvent>
+#include <QProcess>
+#include <QTimer>
+#include <cstdlib>
 
 SettingsWindow::SettingsWindow(TimezoneWindow *timezoneWindow, QWidget *parent)
     : QWidget(parent)
@@ -282,6 +285,12 @@ void SettingsWindow::setupUI()
     languageLayout->addWidget(m_languageComboBox);
     languageLayout->addStretch();
     
+    m_restartButton = new QPushButton(tr("重启程序"));
+    m_restartButton->setToolTip(tr("应用新的语言设置需要重启程序"));
+    m_restartButton->setEnabled(false);
+    
+    languageLayout->addWidget(m_restartButton);
+    
     // 启动设置组
     QGroupBox *startupGroup = new QGroupBox(tr("启动设置"));
     QHBoxLayout *startupLayout = new QHBoxLayout(startupGroup);
@@ -323,6 +332,8 @@ void SettingsWindow::setupUI()
     
     connect(m_saveButton, &QPushButton::clicked, this, &SettingsWindow::onSaveSettings);
     connect(m_cancelButton, &QPushButton::clicked, this, &SettingsWindow::onCancel);
+    connect(m_languageComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingsWindow::onLanguageChanged);
+    connect(m_restartButton, &QPushButton::clicked, this, &SettingsWindow::onRestartApplication);
 }
 
 void SettingsWindow::setupCityManagementTab()
@@ -528,6 +539,37 @@ void SettingsWindow::onSaveSettings()
 void SettingsWindow::onCancel()
 {
     close();
+}
+
+void SettingsWindow::onLanguageChanged(int index)
+{
+    Q_UNUSED(index);
+    m_restartButton->setEnabled(true);
+}
+
+void SettingsWindow::onRestartApplication()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, tr("确认重启"),
+                                  tr("应用新的语言设置需要重启程序，是否立即重启？"),
+                                  QMessageBox::Yes | QMessageBox::No);
+    
+    if (reply == QMessageBox::Yes) {
+        m_settings->setValue("language", m_languageComboBox->currentData().toString());
+        m_settings->sync();
+        
+        QString program = QCoreApplication::applicationFilePath();
+        QStringList arguments = QCoreApplication::arguments();
+        arguments.removeFirst();
+        
+        QProcess::startDetached(program, arguments);
+        
+        close();
+        
+        QTimer::singleShot(200, []() {
+            std::exit(0);
+        });
+    }
 }
 
 bool SettingsWindow::eventFilter(QObject *obj, QEvent *event)

@@ -66,7 +66,7 @@ void TimezoneWindow::setupUI()
     titleLayout->setContentsMargins(5, 0, 5, 0);
     
     // 标题标签
-    QLabel *titleLabel = new QLabel(tr("时区工具"));
+    QLabel *titleLabel = new QLabel(tr("时区"));
     titleLabel->setStyleSheet(
         "font-size: 12px; "
         "font-weight: bold; "

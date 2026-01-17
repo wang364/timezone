@@ -56,14 +56,7 @@ TrayIcon::TrayIcon(QObject *parent)
 
     show();
     
-    bool autoStartEnabled = StartupManager::instance().isAutoStartEnabled();
-    if (autoStartEnabled) {
-        m_timezoneWindowVisible = false;
-        m_timezoneWindow->hide();
-        m_toggleTimezoneAction->setText(tr("显示时区窗口"));
-    } else {
-        onToggleTimezoneWindow();
-    }
+    onToggleTimezoneWindow();
 }
 
 TrayIcon::~TrayIcon()

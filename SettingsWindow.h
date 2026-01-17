@@ -38,6 +38,8 @@ private slots:
     void onRemoveCity();
     void onCitySelectionChanged();
     void onDataLoadingFinished(int cityCount);
+    void onRestartApplication();
+    void onLanguageChanged(int index);
 
 private:
     void addCityByName(const QString &cityName);
@@ -69,6 +71,7 @@ private:
     // 语言设置
     QLabel *m_languageLabel;
     QComboBox *m_languageComboBox;
+    QPushButton *m_restartButton;
     
     QCheckBox *m_startWithSystemCheckBox;
     QCheckBox *m_showSecondsCheckBox;
