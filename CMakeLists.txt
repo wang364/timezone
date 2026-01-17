@@ -23,6 +23,8 @@ qt_add_executable(apptimezone
     TimezoneWindow.h
     CityManager.cpp
     CityManager.h
+    StartupManager.cpp
+    StartupManager.h
     resources.qrc
 )
 

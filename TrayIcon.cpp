@@ -1,6 +1,7 @@
 #include "TrayIcon.h"
 #include "SettingsWindow.h"
 #include "TimezoneWindow.h"
+#include "StartupManager.h"
 #include <QApplication>
 #include <QTimer>
 #include <QDateTime>
@@ -55,8 +56,14 @@ TrayIcon::TrayIcon(QObject *parent)
 
     show();
     
-    // 程序启动后默认显示时区窗口
-    onToggleTimezoneWindow();
+    bool autoStartEnabled = StartupManager::instance().isAutoStartEnabled();
+    if (autoStartEnabled) {
+        m_timezoneWindowVisible = false;
+        m_timezoneWindow->hide();
+        m_toggleTimezoneAction->setText(tr("显示时区窗口"));
+    } else {
+        onToggleTimezoneWindow();
+    }
 }
 
 TrayIcon::~TrayIcon()

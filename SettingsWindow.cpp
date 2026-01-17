@@ -320,15 +320,6 @@ void SettingsWindow::setupUI()
     
     m_mainLayout->addLayout(m_buttonLayout);
     
-    // 连接设置修改信号
-    connect(m_formatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingsWindow::updateModifiedStatus);
-    connect(m_dateFormatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingsWindow::updateModifiedStatus);
-    connect(m_weekdayFormatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingsWindow::updateModifiedStatus);
-    connect(m_languageComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingsWindow::updateModifiedStatus);
-    connect(m_startWithSystemCheckBox, &QCheckBox::checkStateChanged, this, &SettingsWindow::updateModifiedStatus);
-    connect(m_showSecondsCheckBox, &QCheckBox::checkStateChanged, this, &SettingsWindow::updateModifiedStatus);
-    connect(m_showDateCheckBox, &QCheckBox::checkStateChanged, this, &SettingsWindow::updateModifiedStatus);
-    connect(m_showWeekdayCheckBox, &QCheckBox::checkStateChanged, this, &SettingsWindow::updateModifiedStatus);
     
     connect(m_saveButton, &QPushButton::clicked, this, &SettingsWindow::onSaveSettings);
     connect(m_cancelButton, &QPushButton::clicked, this, &SettingsWindow::onCancel);
@@ -438,7 +429,6 @@ void SettingsWindow::setupCityManagementTab()
             CityManager::instance().moveCity(currentRow, currentRow - 1);
             refreshCityList();
             m_cityListWidget->setCurrentRow(currentRow - 1);
-            updateModifiedStatus(); // 标记设置已修改
         }
     });
     connect(m_moveDownButton, &QPushButton::clicked, this, [this]() {
@@ -447,7 +437,6 @@ void SettingsWindow::setupCityManagementTab()
             CityManager::instance().moveCity(currentRow, currentRow + 1);
             refreshCityList();
             m_cityListWidget->setCurrentRow(currentRow + 1);
-            updateModifiedStatus(); // 标记设置已修改
         }
     });
     connect(m_cityListWidget, &QListWidget::currentRowChanged, this, &SettingsWindow::onCitySelectionChanged);
@@ -473,22 +462,13 @@ void SettingsWindow::updateCityButtons()
     m_moveDownButton->setEnabled(hasSelection && m_cityListWidget->currentRow() < m_cityListWidget->count() - 1);
 }
 
-void SettingsWindow::updateModifiedStatus()
-{
-    if (!m_settingsModified) {
-        m_settingsModified = true;
-        setWindowTitle(tr("时区工具设置 (*)") + ""); // 添加星号表示有未保存的修改
-        m_saveButton->setText(tr("保存"));
-    }
-}
-
 void SettingsWindow::loadSettings()
 {
     QString timeFormat = m_settings->value("timeFormat", "HH:mm:ss").toString();
     QString dateFormat = m_settings->value("dateFormat", "yyyy-MM-dd").toString();
     QString weekdayFormat = m_settings->value("weekdayFormat", "ddd").toString();
     QString language = m_settings->value("language", "zh").toString();
-    bool startWithSystem = m_settings->value("startWithSystem", false).toBool();
+    bool startWithSystem = StartupManager::instance().isAutoStartEnabled();
     bool showSeconds = m_settings->value("showSeconds", true).toBool();
     bool showDate = m_settings->value("showDate", true).toBool();
     bool showWeekday = m_settings->value("showWeekday", false).toBool();
@@ -508,7 +488,6 @@ void SettingsWindow::loadSettings()
         m_weekdayFormatComboBox->setCurrentIndex(weekdayFormatIndex);
     }
     
-    // 加载语言设置
     int languageIndex = m_languageComboBox->findData(language);
     if (languageIndex >= 0) {
         m_languageComboBox->setCurrentIndex(languageIndex);
@@ -533,11 +512,12 @@ void SettingsWindow::onSaveSettings()
     
     m_settings->sync();
     
+    StartupManager::instance().setAutoStart(m_startWithSystemCheckBox->isChecked());
+    
     if (m_timezoneWindow) {
         m_timezoneWindow->reloadSettings();
     }
     
-    // 重置修改状态
     m_settingsModified = false;
     setWindowTitle(tr("时区工具设置"));
     m_saveButton->setText(tr("保存"));
@@ -608,10 +588,7 @@ void SettingsWindow::addCityByName(const QString &cityName)
     QString timezoneId = CityManager::instance().getTimezoneForCity(cityName);
     CityManager::instance().addCity(cityName, timezoneId);
     refreshCityList();
-    updateModifiedStatus(); // 标记设置已修改
     
-    // 显示添加成功提示
-    QMessageBox::information(this, tr("添加成功"), QString(tr("已成功添加城市 '%1'！")).arg(cityName));
 }
 
 void SettingsWindow::onRemoveCity()
@@ -625,11 +602,9 @@ void SettingsWindow::onRemoveCity()
     QString cityText = item->text();
     QString cityName = cityText.left(cityText.indexOf('(')).trimmed();
     
-    int result = QMessageBox::question(this, tr("确认删除"), QString(tr("确定要删除城市 '%1' 吗？")).arg(cityName));
-    if (result == QMessageBox::Yes) {
-        CityManager::instance().removeCity(cityName);
-        refreshCityList();
-    }
+    CityManager::instance().removeCity(cityName);
+    refreshCityList();
+
 }
 
 

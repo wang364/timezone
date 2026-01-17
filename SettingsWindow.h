@@ -18,6 +18,7 @@
 #include <QSortFilterProxyModel>
 #include <QSizePolicy>
 #include "CityManager.h"
+#include "StartupManager.h"
 
 class TimezoneWindow;
 
@@ -51,7 +52,6 @@ private:
     void setupCityManagementTab();
     void refreshCityList();
     void updateCityButtons();
-    void updateModifiedStatus();
     
     QTabWidget *m_tabWidget;
     
